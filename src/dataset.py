@@ -49,7 +49,7 @@ class BengliDatasetTrain:
 
         return {
             'image': torch.tensor(image, dtype = torch.float),
-            'graheme_root': torch.tensor(self.grapheme_root[item], dtype = torch.long),
+            'grapheme_root': torch.tensor(self.grapheme_root[item], dtype = torch.long),
             'vowel_diacritic': torch.tensor(self.vowel_diacritic[item], dtype = torch.long),
             'consonant_diacritic': torch.tensor(self.consonant_diacritic[item], dtype = torch.long)
         }
