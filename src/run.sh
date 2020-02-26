@@ -5,7 +5,7 @@ export IMAGE_WIDTH=236
 export EPOCHS=1
 
 export TRAIN_BATCH_SIZE=64
-export TEST_BATCH_SIZE=8
+export TEST_BATCH_SIZE=16
 
 export MODEL_MEAN="(0.485, 0.456, 0.406)"
 export MODEL_STD="(0.229, 0.224, 0.225)"

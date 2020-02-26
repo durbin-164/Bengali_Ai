@@ -3,7 +3,7 @@ import ast
 import torch
 from model_dispatcher import MODEL_DISPATCHER
 from dataset import BengliDatasetTrain
-import torch as nn
+from torch import nn
 from tqdm import tqdm
 
 DEVICE = 'cuda'
@@ -26,14 +26,14 @@ BASE_MODEL = os.environ.get("BASE_MODEL")
 
 
 def loss_fn(outputs, targets):
-    o1,o2,o3 = outputs,
+    o1,o2,o3 = outputs
     t1,t2,t3 = targets
 
     l1 = nn.CrossEntropyLoss()(o1,t1)
     l2 = nn.CrossEntropyLoss()(o2,t2)
     l3 = nn.CrossEntropyLoss()(o3,t3)
 
-    return (l1,l2, l3)/3.0
+    return (l1+l2+l3)/3.0
 
 
 
