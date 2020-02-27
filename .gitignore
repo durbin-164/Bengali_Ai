@@ -6,3 +6,5 @@ input
 .ipynb_checkpoints
 __pycache__
 .venv
+/save_model
+*.bin
