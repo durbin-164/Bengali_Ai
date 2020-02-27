@@ -5,6 +5,7 @@ from model_dispatcher import MODEL_DISPATCHER
 from dataset import BengliDatasetTrain
 from torch import nn
 from tqdm import tqdm
+from early_stoping import EarlyStopping
 
 DEVICE = 'cuda'
 TRAINING_FOLDS_CSV = os.environ.get("TRAINING_FOLDS_CSV")
@@ -33,7 +34,7 @@ def loss_fn(outputs, targets):
     l2 = nn.CrossEntropyLoss()(o2,t2)
     l3 = nn.CrossEntropyLoss()(o3,t3)
 
-    return (l1+l2+l3)/3.0
+    return (2*l1+l2+l3)/4.0
 
 
 
@@ -129,16 +130,27 @@ def main():
     optimizer = torch.optim.Adam(model.parameters(), lr = 1e-4)
 
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", 
-                                            patience = 5,factor=0.3, verbose=True)
-    
+                                            patience = 1,factor=0.3, verbose=True)
+    early_stopping = EarlyStopping(patience=2, verbose=True)
+
+    #base_dir = "Project/EducationProject/Bengali_Ai"
+    model_name = "../save_model/{}_folds{}.bin".format(BASE_MODEL, VALIDATION_FOLDS)
+
     if torch.cuda.device_count()>1:
         model = nn.DataParallel(model)
     
     for epoch in range(EPOCHS):
         train(train_dataset, train_loader, model, optimizer)
-        val_score = evaluate(valid_dataset, valid_loader, model,optimizer)
-        scheduler.step(val_score)
-        torch.save(model.state_dict(), f"{BASE_MODEL}_folds{VALIDATION_FOLDS}.bin")
+        valid_loss = evaluate(valid_dataset, valid_loader, model,optimizer)
+        scheduler.step(valid_loss)
+
+        early_stopping(valid_loss, model, model_name)
+        
+        if early_stopping.early_stop:
+            print("Early stopping")
+            break
+
+        #torch.save(model.state_dict(), f"{BASE_MODEL}_folds{VALIDATION_FOLDS}.bin")
     
 
 if __name__ == "__main__":
