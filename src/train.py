@@ -131,7 +131,7 @@ def main():
 
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", 
                                             patience = 1,factor=0.3, verbose=True)
-    early_stopping = EarlyStopping(patience=2, verbose=True)
+    early_stopping = EarlyStopping(patience=7, verbose=True)
 
     #base_dir = "Project/EducationProject/Bengali_Ai"
     model_name = "../save_model/{}_folds{}.bin".format(BASE_MODEL, VALIDATION_FOLDS)
