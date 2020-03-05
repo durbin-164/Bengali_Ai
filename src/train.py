@@ -6,6 +6,8 @@ from dataset import BengliDatasetTrain
 from torch import nn
 from tqdm import tqdm
 from early_stoping import EarlyStopping
+from optimizers import Over9000
+from utils import macro_recall
 
 DEVICE = 'cuda'
 TRAINING_FOLDS_CSV = os.environ.get("TRAINING_FOLDS_CSV")
@@ -30,18 +32,24 @@ def loss_fn(outputs, targets):
     o1,o2,o3 = outputs
     t1,t2,t3 = targets
 
-    l1 = nn.CrossEntropyLoss()(o1,t1)
-    l2 = nn.CrossEntropyLoss()(o2,t2)
-    l3 = nn.CrossEntropyLoss()(o3,t3)
+    l1 = 0.4*nn.CrossEntropyLoss()(o1,t1)
+    l2 = 0.3*nn.CrossEntropyLoss()(o2,t2)
+    l3 = 0.3*nn.CrossEntropyLoss()(o3,t3)
 
-    return (2*l1+l2+l3)/4.0
+    return (l1+l2+l3)
 
 
 
 def train(dataset, data_loader, model, optimizer):
     model.train()
 
+    final_loss = 0
+    counter = 0
+    final_outputs = []
+    final_targets = []
+
     for bi, d in tqdm(enumerate(data_loader), total=int(len(dataset)/data_loader.batch_size)):
+        counter+=1
         image = d['image']
         grapheme_root = d['grapheme_root']
         vowel_diacritic = d['vowel_diacritic']
@@ -61,11 +69,30 @@ def train(dataset, data_loader, model, optimizer):
         loss.backward()
         optimizer.step()
 
+        final_loss += loss
+
+        o1, o2, o3 = outputs
+        t1, t2, t3 = targets
+
+        final_outputs.append(torch.cat((o1,o2,o3), dim =1))
+        final_targets.append(torch.stack((t1,t2,t3), dim =1))
+    
+    final_outputs = torch.cat(final_outputs)
+    final_targets = torch.cat(final_targets)
+
+    print("=================Train=================")
+    macro_recall_score = macro_recall(final_outputs, final_targets)
+    
+    return final_loss/counter , macro_recall_score
+
 
 def evaluate(dataset, data_loader, model,optimizer):
     model.eval()
     final_loss = 0
     counter = 0
+    final_loss = 0
+    final_outputs = []
+    final_targets = []
     with torch.no_grad():
         for bi, d in tqdm(enumerate(data_loader), total=int(len(dataset)/data_loader.batch_size)):
             counter = counter +1
@@ -87,7 +114,21 @@ def evaluate(dataset, data_loader, model,optimizer):
 
             final_loss +=loss
 
-    return final_loss/counter
+
+            o1, o2, o3 = outputs
+            t1, t2, t3 = targets
+            #print(t1.shape)
+            final_outputs.append(torch.cat((o1,o2,o3), dim=1))
+            final_targets.append(torch.stack((t1,t2,t3), dim=1))
+        
+        final_outputs = torch.cat(final_outputs)
+        final_targets = torch.cat(final_targets)
+
+        print("=================Evalutions=================")
+        macro_recall_score = macro_recall(final_outputs, final_targets)
+        
+
+    return final_loss/counter,  macro_recall_score
 
 
 
@@ -128,10 +169,11 @@ def main():
     )
 
     optimizer = torch.optim.Adam(model.parameters(), lr = 1e-4)
+    #optimizer =Over9000(model.parameters(), lr=2e-3, weight_decay=1e-3)
 
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", 
-                                            patience = 1,factor=0.3, verbose=True)
-    early_stopping = EarlyStopping(patience=7, verbose=True)
+                                            patience = 0,factor=0.3, verbose=True)
+    early_stopping = EarlyStopping(patience=3, verbose=True)
 
     #base_dir = "Project/EducationProject/Bengali_Ai"
     model_name = "../save_model/{}_folds{}.bin".format(BASE_MODEL, VALIDATION_FOLDS)
@@ -140,11 +182,11 @@ def main():
         model = nn.DataParallel(model)
     
     for epoch in range(EPOCHS):
-        train(train_dataset, train_loader, model, optimizer)
-        valid_loss = evaluate(valid_dataset, valid_loader, model,optimizer)
-        scheduler.step(valid_loss)
+        train_loss, train_score = train(train_dataset, train_loader, model, optimizer)
+        val_loss, val_score = evaluate(valid_dataset, valid_loader, model,optimizer)
+        scheduler.step(val_loss)
 
-        early_stopping(valid_loss, model, model_name)
+        early_stopping(val_loss, model, model_name)
         
         if early_stopping.early_stop:
             print("Early stopping")
