@@ -42,10 +42,14 @@ def loss_fn(outputs, targets):
 
 def train(dataset, data_loader, models, optimizers):
 
-    final_loss = 0
+    
     counter = 0
     final_outputs = []
     final_targets = []
+
+    g_final_loss = 0
+    v_final_loss = 0
+    c_final_loss = 0
 
     g_model, v_model, c_model = models
     g_optimizer, v_optimizer, c_optimizer = optimizers
@@ -90,7 +94,9 @@ def train(dataset, data_loader, models, optimizers):
         c_loss.backward()
         c_optimizer.step()
 
-        final_loss += (g_loss+v_loss+c_loss)/3.0
+        g_final_loss += g_loss
+        v_final_loss += v_loss
+        c_final_loss += c_loss
 
         o1, o2, o3 = outputs
         t1, t2, t3 = targets
@@ -101,19 +107,30 @@ def train(dataset, data_loader, models, optimizers):
     final_outputs = torch.cat(final_outputs)
     final_targets = torch.cat(final_targets)
 
+    final_losses = (g_final_loss/counter, v_final_loss/counter, c_final_loss/counter)
+
     print("=================Train=================")
     macro_recall_score = macro_recall(final_outputs, final_targets)
     
-    return final_loss/counter , macro_recall_score
+    return final_losses, macro_recall_score
 
 
-def evaluate(dataset, data_loader, model,optimizer):
-    model.eval()
-    final_loss = 0
+def evaluate(dataset, data_loader, models,optimizers):
     counter = 0
-    final_loss = 0
     final_outputs = []
     final_targets = []
+
+    g_final_loss = 0
+    v_final_loss = 0
+    c_final_loss = 0
+
+    g_model, v_model, c_model = models
+    g_optimizer, v_optimizer, c_optimizer = optimizers
+
+    g_model.eval()
+    v_model.eval()
+    c_model.eval()
+
     with torch.no_grad():
         for bi, d in tqdm(enumerate(data_loader), total=int(len(dataset)/data_loader.batch_size)):
             counter = counter +1
@@ -128,13 +145,22 @@ def evaluate(dataset, data_loader, model,optimizer):
             vowel_diacritic = vowel_diacritic.to(DEVICE, dtype = torch.long)
             consonant_diacritic = consonant_diacritic.to(DEVICE, dtype = torch.long)
 
-            optimizer.zero_grad()
-            outputs = model(image)
+            g_optimizer.zero_grad()
+            v_optimizer.zero_grad()
+            c_optimizer.zero_grad()
+
+            g = g_model(image)
+            v = v_model(image)
+            c = c_model(image)
+
+            outputs = (g,v,c)
             targets = (grapheme_root, vowel_diacritic, consonant_diacritic)
-            loss = loss_fn(outputs, targets)
 
-            final_loss +=loss
+            g_loss,v_loss,c_loss = loss_fn(outputs, targets)
 
+            g_final_loss += g_loss
+            v_final_loss += v_loss
+            c_final_loss += c_loss
 
             o1, o2, o3 = outputs
             t1, t2, t3 = targets
@@ -144,12 +170,13 @@ def evaluate(dataset, data_loader, model,optimizer):
         
         final_outputs = torch.cat(final_outputs)
         final_targets = torch.cat(final_targets)
+        final_losses = (g_final_loss/counter, v_final_loss/counter, c_final_loss/counter)
 
         print("=================Evalutions=================")
         macro_recall_score = macro_recall(final_outputs, final_targets)
         
 
-    return final_loss/counter,  macro_recall_score
+    return final_losses,  macro_recall_score
 
 
 
@@ -205,7 +232,10 @@ def main():
     c_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(c_optimizer, mode="min", patience = 0,factor=0.3, verbose=True)
 
 
-    early_stopping = EarlyStopping(patience=3, verbose=True)
+    g_early_stopping = EarlyStopping(patience=3, verbose=True)
+    v_early_stopping = EarlyStopping(patience=3, verbose=True)
+    c_early_stopping = EarlyStopping(patience=3, verbose=True)
+
 
     #base_dir = "Project/EducationProject/Bengali_Ai"
     g_model_name = "../save_model/g_{}_folds{}.bin".format(BASE_MODEL, VALIDATION_FOLDS)
@@ -225,14 +255,22 @@ def main():
     
     for epoch in range(EPOCHS):
     
-        train_loss, train_score = train(train_dataset, train_loader, models, optimizers)
-        val_loss, val_score = evaluate(valid_dataset, valid_loader, models,optimizers)
-        scheduler.step(val_loss)
+        train_losses, train_score = train(train_dataset, train_loader, models, optimizers)
+        val_losses, val_score = evaluate(valid_dataset, valid_loader, models,optimizers)
 
-        early_stopping(val_loss, model, model_name)
+        g_loss, v_loss, c_loss = val_losses
+
+        g_scheduler.step(g_loss)
+        v_scheduler.step(v_loss)
+        c_scheduler.step(c_loss)
+
+        g_early_stopping(g_loss, g_model, g_model_name)
+        v_early_stopping(v_loss, v_model, v_model_name)
+        c_early_stopping(c_loss, c_model, c_model_name)
+
         
-        if early_stopping.early_stop:
-            print("Early stopping")
+        if g_early_stopping.early_stop and v_early_stopping and c_early_stopping:
+            print(f"********Early stopping at epoches : {epoch}***********")
             break
 
         #torch.save(model.state_dict(), f"{BASE_MODEL}_folds{VALIDATION_FOLDS}.bin")
