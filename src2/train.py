@@ -182,11 +182,11 @@ def evaluate(dataset, data_loader, models,optimizers):
 
 
 def main():
-    g_model = MODEL_DISPATCHER[BASE_MODEL](pretrained=True)
+    g_model = MODEL_DISPATCHER[BASE_MODEL](pretrained=True, 168)
     g_model.to(DEVICE)
-    v_model = MODEL_DISPATCHER[BASE_MODEL](pretrained=True)
+    v_model = MODEL_DISPATCHER[BASE_MODEL](pretrained=True, 11)
     v_model.to(DEVICE)
-    c_model = MODEL_DISPATCHER[BASE_MODEL](pretrained=True)
+    c_model = MODEL_DISPATCHER[BASE_MODEL](pretrained=True,7)
     c_model.to(DEVICE)
 
     train_dataset  = BengliDatasetTrain(
