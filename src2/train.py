@@ -6,7 +6,7 @@ from dataset import BengliDatasetTrain
 from torch import nn
 from tqdm import tqdm
 from early_stoping import EarlyStopping
-from optimizers import Over9000
+#from optimizers import Over9000
 from utils import macro_recall
 
 DEVICE = 'cuda'
@@ -182,11 +182,11 @@ def evaluate(dataset, data_loader, models,optimizers):
 
 
 def main():
-    g_model = MODEL_DISPATCHER[BASE_MODEL](pretrained=True, 168)
+    g_model = MODEL_DISPATCHER[BASE_MODEL](pretrained=True, output_layer=168)
     g_model.to(DEVICE)
-    v_model = MODEL_DISPATCHER[BASE_MODEL](pretrained=True, 11)
+    v_model = MODEL_DISPATCHER[BASE_MODEL](pretrained=True, output_layer=11)
     v_model.to(DEVICE)
-    c_model = MODEL_DISPATCHER[BASE_MODEL](pretrained=True,7)
+    c_model = MODEL_DISPATCHER[BASE_MODEL](pretrained=True,output_layer=7)
     c_model.to(DEVICE)
 
     train_dataset  = BengliDatasetTrain(
@@ -238,9 +238,9 @@ def main():
 
 
     #base_dir = "Project/EducationProject/Bengali_Ai"
-    g_model_name = "../save_model/g_{}_folds{}.bin".format(BASE_MODEL, VALIDATION_FOLDS)
-    v_model_name = "../save_model/v_{}_folds{}.bin".format(BASE_MODEL, VALIDATION_FOLDS)
-    c_model_name = "../save_model/c_{}_folds{}.bin".format(BASE_MODEL, VALIDATION_FOLDS)
+    g_model_name = "../save_model2/g_{}_folds{}.bin".format(BASE_MODEL, VALIDATION_FOLDS)
+    v_model_name = "../save_model2/v_{}_folds{}.bin".format(BASE_MODEL, VALIDATION_FOLDS)
+    c_model_name = "../save_model2/c_{}_folds{}.bin".format(BASE_MODEL, VALIDATION_FOLDS)
 
     if torch.cuda.device_count()>1:
         g_model = nn.DataParallel(g_model)

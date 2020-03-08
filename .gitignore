@@ -8,3 +8,4 @@ __pycache__
 .venv
 /save_model
 *.bin
+/save_model2
