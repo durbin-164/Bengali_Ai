@@ -3,38 +3,35 @@ import torch.nn as nn
 from torch.nn import functional as F
 
 class ResNet34(nn.Module):
-    def __init__(self,pretrained, output_layer):
+    def __init__(self,pretrained,output_channel):
         super(ResNet34, self).__init__()
         if pretrained == True:
             self.model = pretrainedmodels.__dict__['resnet34'](pretrained = 'imagenet')
         else:
             self.model = pretrainedmodels.__dict__['resnet34'](pretrained = None)
         
-        self.l0 = nn.Linear(512, output_layer)
-
-        self.dropout = nn.Dropout(p=0.3)
-
+        self.l0 = nn.Linear(512, output_channel)
+       
     
     def forward(self, x):
         bs, _,_,_ = x.shape
         x = self.model.features(x)
         x = F.adaptive_avg_pool2d(x, 1).reshape(bs, -1)
-        x = self.dropout(x)
-
-        out = self.l0(x) 
+        out = self.l0(x)
+        
 
         return out
 
 class ResNet50(nn.Module):
-    def __init__(self,pretrained,output_layer):
+    def __init__(self,pretrained, output_channel):
         super(ResNet50, self).__init__()
         if pretrained == True:
             self.model = pretrainedmodels.__dict__['resnet50'](pretrained = 'imagenet')
         else:
             self.model = pretrainedmodels.__dict__['resnet50'](pretrained = None)
         
-        self.l0 = nn.Linear(512, output_layer)
-        
+        self.l0 = nn.Linear(512, output_channel)
+      
         self.dropout = nn.Dropout(p=0.5)
         self.fc1 = nn.Linear(2048, 512)
     
@@ -44,33 +41,35 @@ class ResNet50(nn.Module):
         x = F.adaptive_avg_pool2d(x, 1).reshape(bs, -1)
         x = self.dropout(x)
         x = self.fc1(x)
+        x = self.dropout(x)
         out = self.l0(x)
-       
+
         return out
 
-
-
 class ResNet101(nn.Module):
-    def __init__(self,pretrained):
+    def __init__(self,pretrained, output_channel):
         super(ResNet101, self).__init__()
         if pretrained == True:
             self.model = pretrainedmodels.__dict__['resnet101'](pretrained = 'imagenet')
         else:
             self.model = pretrainedmodels.__dict__['resnet101'](pretrained = None)
         
-        self.l0 = nn.Linear(2048, 168)
-        self.l1 = nn.Linear(2048, 11)
-        self.l2 = nn.Linear(2048, 7)
+        self.l0 = nn.Linear(512, output_channel)
+      
+        self.dropout = nn.Dropout(p=0.5)
+        self.fc1 = nn.Linear(2048, 512)
     
     def forward(self, x):
         bs, _,_,_ = x.shape
         x = self.model.features(x)
         x = F.adaptive_avg_pool2d(x, 1).reshape(bs, -1)
-        l0 = self.l0(x)
-        l1 = self.l1(x)
-        l2 = self.l2(x)
+        x = self.dropout(x)
+        x = self.fc1(x)
+        x = self.dropout(x)
+        out = self.l0(x)
 
-        return l0,l1, l2
+        return out
+
 
     
 class InceptionV3(nn.Module):
