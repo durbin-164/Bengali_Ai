@@ -1,6 +1,8 @@
 import pretrainedmodels
 import torch.nn as nn
 from torch.nn import functional as F
+from ghost_net import ghost_net
+from efficientnet_pytorch import EfficientNet
 
 class ResNet34(nn.Module):
     def __init__(self,pretrained):
@@ -120,3 +122,60 @@ class ResNet50(nn.Module):
         l2 = self.l2(x)
 
         return l0,l1, l2
+
+
+
+class GhostNet(nn.Module):
+    def __init__(self,pretrained):
+        super(GhostNet, self).__init__()
+        if pretrained == True:
+            self.model = ghost_net()
+        else:
+            self.model = ghost_net()
+
+        self.dropout = nn.Dropout(p=0.4)
+        
+        self.l0 = nn.Linear(1000, 168)
+        self.l1 = nn.Linear(1000, 11)
+        self.l2 = nn.Linear(1000, 7)
+       
+    
+    def forward(self, x):
+        #bs, _,_,_ = x.shape
+        
+        x = self.model(x)
+        x = self.dropout(x)
+        l0 = self.l0(x)
+        l1 = self.l1(x)
+        l2 = self.l2(x)
+
+        return l0,l1,l2
+
+
+class EfficientNetWrapper(nn.Module):
+    def __init__(self, pretrained):
+        super(EfficientNetWrapper, self).__init__()
+
+        if pretrained:
+            self.model = EfficientNet.from_pretrained('efficientnet-b4')
+        else:
+            self.model = EfficientNet.from_name('efficientnet-b4')
+        
+        # Appdend output layers based on our date
+       
+        self.dropout = nn.Dropout(p=0.4)
+
+        self.l0 = nn.Linear(1000, 168)
+        self.l1 = nn.Linear(1000, 11)
+        self.l2 = nn.Linear(1000, 7)
+        
+        
+    def forward(self, x):
+        x = self.model(x)
+        x = self.dropout(x)
+
+        l0 = self.l0(x)
+        l1 = self.l1(x)
+        l2 = self.l2(x)
+
+        return l0,l1,l2

@@ -30,6 +30,17 @@ class BengliDatasetTrain:
                                                 scale_limit=0.1,
                                                 rotate_limit=5,
                                                 p = 0.9),
+                albumentations.Rotate(limit = 5),
+                albumentations.RandomContrast(limit=0.2),
+                albumentations.GaussianBlur(blur_limit=7),
+                albumentations.RandomGamma(),
+                albumentations.RandomShadow(),
+                albumentations.GaussNoise(),
+                albumentations.ChannelShuffle(),
+                albumentations.Cutout(),
+                albumentations.Equalize(),
+                albumentations.MultiplicativeNoise(),
+
 
                 albumentations.Normalize(mean, std, always_apply = True)
             ])
@@ -41,11 +52,11 @@ class BengliDatasetTrain:
     def __getitem__(self, item):
         image = joblib.load(f'../input/image_pickles/{self.image_ids[item]}.pkl')
 
-        image = image.reshape(137,236).astype(float)
+        image = image.reshape(137,236).astype(np.float)
         image = Image.fromarray(image).convert("RGB")
         image = self.aug(image = np.array(image))["image"]
 
-        image = np.transpose(image, (2,0,1)).astype(np.float32)
+        image = np.transpose(image, (2,0,1)).astype(np.float)
 
         return {
             'image': torch.tensor(image, dtype = torch.float),

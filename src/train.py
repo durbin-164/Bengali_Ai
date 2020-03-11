@@ -32,11 +32,11 @@ def loss_fn(outputs, targets):
     o1,o2,o3 = outputs
     t1,t2,t3 = targets
 
-    l1 = 0.4*nn.CrossEntropyLoss()(o1,t1)
-    l2 = 0.3*nn.CrossEntropyLoss()(o2,t2)
-    l3 = 0.3*nn.CrossEntropyLoss()(o3,t3)
+    l1 = nn.CrossEntropyLoss()(o1,t1)
+    l2 = nn.CrossEntropyLoss()(o2,t2)
+    l3 = nn.CrossEntropyLoss()(o3,t3)
 
-    return (l1+l2+l3)
+    return (l1+l2+l3)/3.0
 
 
 
@@ -173,7 +173,7 @@ def main():
 
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", 
                                             patience = 0,factor=0.3, verbose=True)
-    early_stopping = EarlyStopping(patience=3, verbose=True)
+    early_stopping = EarlyStopping(patience=4, verbose=True)
 
     #base_dir = "Project/EducationProject/Bengali_Ai"
     model_name = "../save_model/{}_folds{}.bin".format(BASE_MODEL, VALIDATION_FOLDS)
@@ -184,9 +184,9 @@ def main():
     for epoch in range(EPOCHS):
         train_loss, train_score = train(train_dataset, train_loader, model, optimizer)
         val_loss, val_score = evaluate(valid_dataset, valid_loader, model,optimizer)
-        scheduler.step(val_loss)
+        scheduler.step(val_score)
 
-        early_stopping(val_loss, model, model_name)
+        early_stopping(val_score, model, model_name)
         
         if early_stopping.early_stop:
             print("Early stopping")

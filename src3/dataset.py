@@ -30,6 +30,14 @@ class BengliDatasetTrain:
                                                 scale_limit=0.1,
                                                 rotate_limit=5,
                                                 p = 0.9),
+                albumentations.Rotate(limit = 5),
+                albumentations.RandomContrast(limit=0.2),
+                albumentations.GaussianBlur(blur_limit=7),
+                albumentations.RandomGamma(),
+                albumentations.RandomShadow(),
+                albumentations.GaussNoise(),
+                albumentations.ChannelShuffle(),
+
 
                 albumentations.Normalize(mean, std, always_apply = True)
             ])
@@ -45,7 +53,7 @@ class BengliDatasetTrain:
         image = Image.fromarray(image).convert("RGB")
         image = self.aug(image = np.array(image))["image"]
 
-        image = np.transpose(image, (2,0,1)).astype(np.float32)
+        image = np.transpose(image, (2,0,1)).astype(np.float32)/255.0
 
         return {
             'image': torch.tensor(image, dtype = torch.float),
