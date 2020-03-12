@@ -168,12 +168,13 @@ def main():
         num_workers = 4
     )
 
-    optimizer = torch.optim.Adam(model.parameters(), lr = 1e-4)
+    #optimizer = torch.optim.Adam(model.parameters(), lr = 1e-4)
+    optimizer = torch.optim.AdamW(model.parameters())
     #optimizer =Over9000(model.parameters(), lr=2e-3, weight_decay=1e-3)
 
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", 
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="max", 
                                             patience = 0,factor=0.3, verbose=True)
-    early_stopping = EarlyStopping(patience=4, verbose=True)
+    early_stopping = EarlyStopping(patience=3, verbose=True)
 
     #base_dir = "Project/EducationProject/Bengali_Ai"
     model_name = "../save_model/{}_folds{}.bin".format(BASE_MODEL, VALIDATION_FOLDS)

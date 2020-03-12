@@ -37,7 +37,7 @@ class BengliDatasetTrain:
                 albumentations.RandomShadow(),
                 albumentations.GaussNoise(),
                 albumentations.ChannelShuffle(),
-                albumentations.Cutout(),
+                #albumentations.Cutout(),
                 albumentations.Equalize(),
                 albumentations.MultiplicativeNoise(),
 
@@ -56,7 +56,7 @@ class BengliDatasetTrain:
         image = Image.fromarray(image).convert("RGB")
         image = self.aug(image = np.array(image))["image"]
 
-        image = np.transpose(image, (2,0,1)).astype(np.float)
+        image = np.transpose(image, (2,0,1)).astype(np.float)/255.0
 
         return {
             'image': torch.tensor(image, dtype = torch.float),

@@ -157,9 +157,9 @@ class EfficientNetWrapper(nn.Module):
         super(EfficientNetWrapper, self).__init__()
 
         if pretrained:
-            self.model = EfficientNet.from_pretrained('efficientnet-b4')
+            self.model = EfficientNet.from_pretrained('efficientnet-b5')
         else:
-            self.model = EfficientNet.from_name('efficientnet-b4')
+            self.model = EfficientNet.from_name('efficientnet-b5')
         
         # Appdend output layers based on our date
        
